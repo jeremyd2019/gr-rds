@@ -62,6 +62,41 @@ const std::string pty_table[32]={
 	"Alarm Test",
 	"Alarm-Alarm!"};
 
+/* F.2 PTY codes North America (NRSC-4-B) */
+const std::string pty_table_rbds[32]={
+	"None",
+	"News",
+	"Information",
+	"Sports",
+	"Talk",
+	"Rock",
+	"Classic Rock",
+	"Adult Hits",
+	"Soft Rock",
+	"Top 40",
+	"Country",
+	"Oldies",
+	"Soft",
+	"Nostalgia",
+	"Jazz",
+	"Classical",
+	"Rhythm and Blues",
+	"Soft R & B",
+	"Foreign Language",
+	"Religious Music",
+	"Religious Talk",
+	"Personality",
+	"Public",
+	"College",
+	"Hablar Espanol",
+	"Musica Espanol",
+	"Hip hop",
+	"",
+	"",
+	"Weather",
+	"Emergency Test",
+	"ALERT! ALERT!"};
+
 /* page 71, Annex D, table D.1 in the standard */
 const std::string pi_country_codes[15][5]={
 	{"DE","GR","MA","__","MD"},

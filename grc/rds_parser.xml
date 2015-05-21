@@ -4,7 +4,7 @@
 	<key>gr_rds_parser</key>
 	<category>RDS</category>
 	<import>import rds</import>
-	<make>rds.parser($log, $debug)</make>
+	<make>rds.parser($log, $debug, $rbds)</make>
 	<callback>reset();$reset;</callback>
 	<param>
 		<name>Log</name>
@@ -31,6 +31,20 @@
 		</option>
 		<option>
 			<name>Disable</name>
+			<key>False</key>
+		</option>
+	</param>
+	<param>
+		<name>RDS/RBDS</name>
+		<key>rbds</key>
+		<value>False</value>
+		<type>bool</type>
+		<option>
+			<name>RBDS</name>
+			<key>True</key>
+		</option>
+		<option>
+			<name>RDS</name>
 			<key>False</key>
 		</option>
 	</param>

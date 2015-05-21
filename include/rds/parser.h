@@ -27,7 +27,7 @@ class RDS_API parser : virtual public gr::block
 {
 public:
 	typedef boost::shared_ptr<parser> sptr;
-	static sptr make(bool log, bool debug);
+	static sptr make(bool log, bool debug, bool rbds);
 
 	virtual void reset() = 0;
 };

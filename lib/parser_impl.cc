@@ -27,16 +27,17 @@
 using namespace gr::rds;
 
 parser::sptr
-parser::make(bool log, bool debug) {
-  return gnuradio::get_initial_sptr(new parser_impl(log, debug));
+parser::make(bool log, bool debug, bool rbds) {
+  return gnuradio::get_initial_sptr(new parser_impl(log, debug, rbds));
 }
 
-parser_impl::parser_impl(bool log, bool debug)
+parser_impl::parser_impl(bool log, bool debug, bool rbds)
 	: gr::block ("gr_rds_parser",
 			gr::io_signature::make (0, 0, 0),
 			gr::io_signature::make (0, 0, 0)),
 	log(log),
-	debug(debug)
+	debug(debug),
+	rbds(rbds)
 {
 	message_port_register_in(pmt::mp("in"));
 	set_msg_handler(pmt::mp("in"), boost::bind(&parser_impl::parse, this, _1));
@@ -520,7 +521,7 @@ void parser_impl::decode_type14(unsigned int *group, bool B){
 			case 13: // PTY(ON), TA(ON)
 				ta_on = information & 0x01;
 				pty_on = (information >> 11) & 0x1f;
-				lout << "PTY(ON):" << pty_table[int(pty_on)];
+				lout << "PTY(ON):" << (rbds?pty_table_rbds:pty_table)[int(pty_on)];
 				if(ta_on) {
 					lout << " - TA";
 				}
@@ -572,16 +573,18 @@ void parser_impl::parse(pmt::pmt_t msg) {
 	unsigned char pi_program_reference_number = program_identification & 0xff;
 	std::string pistring = str(boost::format("%04X") % program_identification);
 	send_message(0, pistring);
-	send_message(2, pty_table[program_type]);
+	send_message(2, (rbds?pty_table_rbds:pty_table)[program_type]);
 
-	lout << " - PI:" << pistring << " - " << "PTY:" << pty_table[program_type];
-	lout << " (country:" << pi_country_codes[pi_country_identification - 1][0];
-	lout << "/" << pi_country_codes[pi_country_identification - 1][1];
-	lout << "/" << pi_country_codes[pi_country_identification - 1][2];
-	lout << "/" << pi_country_codes[pi_country_identification - 1][3];
-	lout << "/" << pi_country_codes[pi_country_identification - 1][4];
-	lout << ", area:" << coverage_area_codes[pi_area_coverage];
-	lout << ", program:" << int(pi_program_reference_number) << ")" << std::endl;
+	lout << " - PI:" << pistring << " - " << "PTY:" << (rbds?pty_table_rbds:pty_table)[program_type];
+	if (!rbds) {
+		lout << " (country:" << pi_country_codes[pi_country_identification - 1][0];
+		lout << "/" << pi_country_codes[pi_country_identification - 1][1];
+		lout << "/" << pi_country_codes[pi_country_identification - 1][2];
+		lout << "/" << pi_country_codes[pi_country_identification - 1][3];
+		lout << "/" << pi_country_codes[pi_country_identification - 1][4];
+		lout << ", area:" << coverage_area_codes[pi_area_coverage];
+		lout << ", program:" << int(pi_program_reference_number) << ")" << std::endl;
+	}
 
 	switch (group_type) {
 		case 0:

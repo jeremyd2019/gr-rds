@@ -26,7 +26,7 @@ namespace rds {
 class parser_impl : public parser
 {
 public:
-	parser_impl(bool log, bool debug);
+	parser_impl(bool log, bool debug, bool rbds);
 
 private:
 	~parser_impl();
@@ -71,6 +71,7 @@ private:
 	bool           static_pty;
 	bool           debug;
 	bool           log;
+	bool           rbds;
 	gr::thread::mutex d_mutex;
 };
 
