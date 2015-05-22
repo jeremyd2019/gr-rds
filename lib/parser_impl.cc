@@ -26,6 +26,74 @@
 
 using namespace gr::rds;
 
+// Section D.7 of RBDS standard
+static std::string rbds_pi2callsign(unsigned int pi)
+{
+	if (pi >= 0x9950 && pi < 0x99C0)
+	{
+		// three letter call sign table D.7
+		static const char * const TLA[] = {
+	// 9950
+	"KEX", "KFH", "KFI", "KGA", "KGO", "KGU", "KGW", "KGY",
+	"KID", "KIT", "KJR", "KLO", "KLZ", "KMA", "KMJ", "KNX",
+	// 9960
+	"KOA", "   ", "   ", "   ", "KQV", "KSL", "KUJ", "KVI",
+	"KWG", "   ", "   ", "KYW", "   ", "WBZ", "WDZ", "WEW",
+	// 9970
+	"   ", "WGL", "WGN", "WGR", "   ", "WHA", "WHB", "WHK",
+	"WHO", "   ", "WIP", "WJR", "WKY", "WLS", "WLW", "   ",
+	// 9980
+	"   ", "WOC", "   ", "WOL", "WOR", "   ", "   ", "   ",
+	"WWJ", "WWL", "   ", "   ", "   ", "   ", "   ", "   ",
+	// 9990
+	"KDB", "KGB", "KOY", "KPQ", "KSD", "KUT", "KXL", "KXO",
+	"   ", "WBT", "WGH", "WGY", "WHP", "WIL", "WMC", "WMT",
+	// 99A0
+	"WOI", "WOW", "WRR", "WSB", "WSM", "KBW", "KCY", "KDF",
+	"   ", "   ", "KHQ", "KOB", "   ", "   ", "   ", "   ",
+	// 99B0
+	"   ", "   ", "   ", "WIS", "WJW", "WJZ", "   ", "   ",
+	"   ", "WRC", "   ", "   ", "   ", "   ", "   ", "   "};
+		return TLA[pi - 0x9950];
+	}
+	if ((pi & 0xF000) == 0x1000)
+	{
+		// D.7.4, if the station is using the TMC ODA, they may want to substitute 1 for the first nibble, "because many traffic information receivers interpret a first nibble of 1 as an indication that the receiver is in North America"
+		// I don't see a good way to reconstruct the lost data, so I am putting my head in the sand for now
+	}
+	std::string ret(4, '\0');
+	if (pi >= 0xAF11 && pi < 0xAFB0)
+	{
+		pi = (pi & 0xFF) << 8;
+	}
+	if (pi >= 0xA100 && pi < 0xAA00)
+	{
+		pi = ((pi & 0xF00) << 4) | (pi & 0xFF);
+	}
+	if (pi >= 0x1000 && pi < 0x9950)
+	{
+		if (pi < 0x54A8)
+		{
+			ret[0] = 'K';
+			pi -= 0x1000;
+		}
+		else// if (pi >= 0x54A8)
+		{
+			ret[0] = 'W';
+			pi -= 0x54A8;
+		}
+		ret[3] = 'A' + (pi % 26);
+		pi /= 26;
+		ret[2] = 'A' + (pi % 26);
+		pi /= 26;
+		assert(pi == (pi % 26));
+		ret[1] = 'A' + (pi % 26);
+		return ret;
+	}
+
+	return str(boost::format("%04X") % pi);
+}
+
 parser::sptr
 parser::make(bool log, bool debug, bool rbds) {
   return gnuradio::get_initial_sptr(new parser_impl(log, debug, rbds));
@@ -568,15 +636,19 @@ void parser_impl::parse(pmt::pmt_t msg) {
 
 	program_identification = group[0];     // "PI"
 	program_type = (group[1] >> 5) & 0x1f; // "PTY"
-	int pi_country_identification = (program_identification >> 12) & 0xf;
-	int pi_area_coverage = (program_identification >> 8) & 0xf;
-	unsigned char pi_program_reference_number = program_identification & 0xff;
-	std::string pistring = str(boost::format("%04X") % program_identification);
+	std::string pistring;
+	if (rbds)
+		pistring = rbds_pi2callsign(program_identification);
+	else
+		pistring = str(boost::format("%04X") % program_identification);
 	send_message(0, pistring);
 	send_message(2, (rbds?pty_table_rbds:pty_table)[program_type]);
 
 	lout << " - PI:" << pistring << " - " << "PTY:" << (rbds?pty_table_rbds:pty_table)[program_type];
 	if (!rbds) {
+		int pi_country_identification = (program_identification >> 12) & 0xf;
+		int pi_area_coverage = (program_identification >> 8) & 0xf;
+		unsigned char pi_program_reference_number = program_identification & 0xff;
 		lout << " (country:" << pi_country_codes[pi_country_identification - 1][0];
 		lout << "/" << pi_country_codes[pi_country_identification - 1][1];
 		lout << "/" << pi_country_codes[pi_country_identification - 1][2];
